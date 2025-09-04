@@ -30,6 +30,12 @@
   .hidden{display:none}
   .small{font-size:13px;color:var(--muted)}
   .pill{padding:4px 8px;border-radius:999px;background:#071125;color:var(--muted);font-size:12px}
+
+/* Custom Fixes */
+table th { color: black !important; background: #f2f2f2; }
+.it-amt { color: red !important; font-weight: bold; }
+.saved-table, .saved-table th, .saved-table td { background: white !important; color: black !important; }
+
 </style>
 </head>
 <body>
@@ -89,7 +95,7 @@
 
       <div class="row cols-3" style="margin-top:10px">
         <div>
-          <label>Discount %</label>
+          <label>Discount ₹</label>
           <input id="estDisc" type="number" step="0.01" value="0">
         </div>
         <div>
@@ -155,7 +161,7 @@
 
       <div class="row cols-3" style="margin-top:10px">
         <div>
-          <label>Discount %</label>
+          <label>Discount ₹</label>
           <input id="invDisc" type="number" step="0.01" value="0">
         </div>
         <div>
@@ -709,6 +715,20 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   boot();
 });
+
+function sendEstimateAcceptEmail(data){
+  const body = `Estimate Details:%0D%0A` +
+    `Estimate No: ${data.number}%0D%0A` +
+    `Work Title: ${data.title||''}%0D%0A` +
+    `Name: ${data.name}%0D%0A` +
+    `Address: ${data.address||''}%0D%0A` +
+    `Contact: ${data.contact}%0D%0A` +
+    `Estimate Date: ${data.date}%0D%0A` +
+    `Estimate Amount: ${data.amount}%0D%0A` +
+    `Customer Response: Accept`;
+  window.location.href = `mailto:dalvivaibhav4562@gmail.com?subject=Estimate Accepted&body=${body}`;
+}
+
 </script>
 </body>
 </html>
