@@ -1,734 +1,609 @@
 <!doctype html>
-<html lang="mr">
+<html lang="en">
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Estimate • Invoice • Expenses — Fixed Single File</title>
+<title>Estimate & Invoice — Single File</title>
 <style>
-  :root{--bg:#071022;--card:#0e1726;--muted:#9bb0c7;--text:#e8f6ff;--accent:#60a5fa;--ok:#22c55e;}
-  body{margin:0;font-family:system-ui,Segoe UI,Roboto,Arial;background:linear-gradient(180deg,#071022,#0b1222);color:var(--text)}
+  :root{--bg:#f3f7fb;--card:#ffffff;--muted:#6b7280;--text:#0f172a;--accent:#0ea5e9;--danger:#dc2626}
+  body{font-family:Segoe UI,Roboto,Arial;margin:0;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
   .wrap{max-width:1100px;margin:18px auto;padding:14px}
-  header{display:flex;justify-content:space-between;align-items:center}
+  header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
   h1{margin:0;font-size:20px}
-  .tabs{display:flex;gap:8px;margin:12px 0;flex-wrap:wrap}
-  .tabbtn{padding:8px 12px;border-radius:10px;border:0;background:rgba(255,255,255,.04);cursor:pointer;color:var(--text)}
-  .tabbtn[aria-selected="true"]{background:var(--accent);color:#021023}
-  .card{background:var(--card);padding:14px;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.45)}
+  .tabs{display:flex;gap:8px;flex-wrap:wrap}
+  .tabbtn{background:#e6eef8;border:0;padding:8px 10px;border-radius:8px;cursor:pointer}
+  .tabbtn[aria-selected="true"]{background:var(--accent);color:#fff}
+  .card{background:var(--card);padding:12px;border-radius:10px;box-shadow:0 8px 20px rgba(2,6,23,0.06)}
+  .row{display:grid;grid-template-columns:repeat(12,1fr);gap:8px}
+  .col-6{grid-column:span 6}
+  .col-4{grid-column:span 4}
+  .col-3{grid-column:span 3}
   label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
   input,select,textarea,button{font:inherit}
-  input,select,textarea{width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,.06);background:#071125;color:var(--text)}
-  textarea{min-height:80px}
-  .row{display:grid;grid-template-columns:repeat(12,1fr);gap:10px}
-  .row> *{grid-column:span 12}
-  @media(min-width:760px){.row.cols-2> *{grid-column:span 6}.row.cols-3> *{grid-column:span 4}}
+  input,select,textarea{width:100%;padding:8px;border-radius:8px;border:1px solid #e6eef8;background:#fff}
+  textarea{min-height:80px;resize:vertical}
   table{width:100%;border-collapse:collapse;margin-top:8px}
-  th,td{padding:8px;border-bottom:1px dashed rgba(255,255,255,.06);text-align:left;vertical-align:middle}
-  .btn{padding:8px 10px;border-radius:8px;border:0;background:rgba(255,255,255,.04);color:var(--text);cursor:pointer}
-  .btn.primary{background:var(--ok);color:#06220f}
-  .right{display:flex;justify-content:flex-end}
-  .kv{display:flex;justify-content:space-between;background:#071125;padding:8px;border-radius:8px;margin-top:6px}
-  .hidden{display:none}
+  th,td{padding:8px;border:1px solid #eef3f8;text-align:left;vertical-align:top}
+  th{background:#fff;color:black}
+  .it-amt{color:var(--danger);font-weight:700;text-align:right}
+  .right{display:flex;justify-content:flex-end;gap:8px}
+  .btn{padding:8px 10px;border-radius:8px;border:0;background:#e6eef8;cursor:pointer}
+  .btn.primary{background:#10b981;color:white}
   .small{font-size:13px;color:var(--muted)}
-  .pill{padding:4px 8px;border-radius:999px;background:#071125;color:var(--muted);font-size:12px}
-
-/* Custom Fixes */
-table th { color: black !important; background: #f2f2f2; }
-.it-amt { color: red !important; font-weight: bold; }
-.saved-table, .saved-table th, .saved-table td { background: white !important; color: black !important; }
-
+  /* Saved tables: white bg, black text */
+  .saved-table th,.saved-table td{background:white;color:black}
+  .saved-table button{color:black;background:#f3f4f6;border:1px solid #e5e7eb;padding:6px;border-radius:6px}
+  /* Responsive: stack item & description */
+  @media(max-width:640px){
+    table.items thead{display:none}
+    table.items, table.items tbody, table.items tr, table.items td{display:block;width:100%}
+    table.items td{border:none;padding:6px 0}
+    table.items td .cell-label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+  }
 </style>
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <div>
-        <h1>Estimate • Invoice • Expenses</h1>
-        <div class="small">Fixed build — all buttons bound on DOMContentLoaded</div>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <button class="btn" id="btnBackup">Backup</button>
-        <button class="btn" id="btnRestore">Restore</button>
-        <button class="btn" id="btnPrint">Print</button>
-      </div>
-    </header>
-
-    <nav class="tabs" role="tablist" aria-label="Main tabs">
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Estimate & Invoice</h1>
+      <div class="small">Simple single-file app — mobile friendly</div>
+    </div>
+    <div class="tabs" role="tablist">
       <button class="tabbtn" data-tab="estimate" aria-selected="true">Estimate</button>
       <button class="tabbtn" data-tab="invoice">Invoice</button>
       <button class="tabbtn" data-tab="expenses">Expenses</button>
       <button class="tabbtn" data-tab="reports">Reports</button>
-      <button class="tabbtn" data-tab="pick">Pick</button>
       <button class="tabbtn" data-tab="whats">WhatsApp Preview</button>
       <button class="tabbtn" data-tab="settings">Settings</button>
-    </nav>
+    </div>
+  </header>
 
-    <!-- ESTIMATE -->
-    <section id="tab-estimate" class="card tab" role="tabpanel">
-      <div class="row cols-2">
-        <div>
-          <label>Estimate No.</label>
-          <input id="estNo" readonly>
-          <div class="small">Format: <span class="pill">EST-0000</span></div>
-        </div>
-        <div>
-          <label>Date</label>
-          <input id="estDate" type="date">
-        </div>
-        <div>
-          <label>Client / Company</label>
-          <input id="estClient" placeholder="Client name">
-        </div>
-        <div>
-          <label>Contact (Picker)</label>
-          <div style="display:flex;gap:8px;align-items:center">
-            <input id="estContact" placeholder="Name • Phone">
-            <button class="btn" id="estPick">Pick</button>
-          </div>
-        </div>
+  <!-- ESTIMATE -->
+  <section id="estimate" class="card" role="tabpanel">
+    <div class="row" style="align-items:end">
+      <div class="col-6">
+        <label>Estimate No.</label>
+        <input id="estNo" readonly>
+        <div class="small">Format: EST-0000</div>
       </div>
+      <div class="col-6">
+        <label>Date</label>
+        <input id="estDate" type="date">
+      </div>
+      <div class="col-6">
+        <label>Client / Company</label>
+        <input id="estClient">
+      </div>
+      <div class="col-6">
+        <label>Contact</label>
+        <input id="estContact" placeholder="Name • Phone">
+      </div>
+    </div>
 
-      <table class="items" id="estItems">
-        <thead><tr><th>Item</th><th>Description</th><th>Qty</th><th>Unit</th><th>Rate</th><th>Amount</th><th></th></tr></thead>
-        <tbody></tbody>
-      </table>
-      <div class="right" style="margin-top:8px"><button class="btn" id="estAdd">+ Add Item</button></div>
+    <table class="items" id="estItems">
+      <thead><tr><th style="width:40%">Item / Description</th><th style="width:10%">Qty</th><th style="width:10%">Unit</th><th style="width:20%">Rate</th><th style="width:20%">Amount</th><th></th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <div class="right" style="margin-top:8px"><button class="btn" id="estAdd">+ Add Item</button></div>
 
-      <div class="row cols-3" style="margin-top:10px">
-        <div>
-          <label>Discount ₹</label>
-          <input id="estDisc" type="number" step="0.01" value="0">
-        </div>
-        <div>
-          <label>Currency</label>
-          <input id="estCurr" value="₹">
-        </div>
-        <div>
-          <label>Notes (this Estimate)</label>
-          <input id="estNotes" placeholder="Optional">
-        </div>
+    <div class="row" style="margin-top:10px;align-items:end">
+      <div class="col-4">
+        <label>Discount ₹</label>
+        <input id="estDisc" type="number" value="0" step="0.01">
       </div>
+      <div class="col-4">
+        <label>Currency</label>
+        <input id="estCurr" value="₹">
+      </div>
+      <div class="col-4">
+        <label>Notes</label>
+        <input id="estNotes">
+      </div>
+    </div>
 
-      <div style="display:grid;grid-template-columns:1fr 320px;gap:12px;margin-top:12px;align-items:start">
-        <div></div>
-        <div>
-          <div class="kv"><span>Sub Total</span><strong id="estSub">₹0.00</strong></div>
-          <div class="kv"><span>Discount</span><strong id="estDiscAmt">₹0.00</strong></div>
-          <div class="kv"><span>Final Amount</span><strong id="estFinal">₹0.00</strong></div>
-        </div>
+    <div style="display:grid;grid-template-columns:1fr 320px;gap:12px;margin-top:12px">
+      <div></div>
+      <div>
+        <div style="display:flex;justify-content:space-between;padding:8px"><span>Sub Total</span><strong id="estSub">₹0.00</strong></div>
+        <div style="display:flex;justify-content:space-between;padding:8px"><span>Discount</span><strong id="estDiscAmt">₹0.00</strong></div>
+        <div style="display:flex;justify-content:space-between;padding:8px"><span>Final Amount</span><strong id="estFinal">₹0.00</strong></div>
       </div>
+    </div>
 
-      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
-        <button class="btn primary" id="estSave">Save Estimate</button>
-        <button class="btn" id="estClear">Clear</button>
-      </div>
+    <div class="right" style="margin-top:12px">
+      <button class="btn primary" id="estSave">Save Estimate</button>
+      <button class="btn" id="estPDF">Export PDF</button>
+    </div>
 
-      <div style="margin-top:14px">
-        <h3 style="margin:0 0 8px">Saved Estimates</h3>
-        <table class="items" id="tblEstimates"><thead><tr><th>No</th><th>Date</th><th>Client</th><th>Total</th><th>Actions</th></tr></thead><tbody></tbody></table>
-      </div>
-    </section>
+    <h3 style="margin-top:18px">Saved Estimates</h3>
+    <table id="tblEstimates" class="saved-table"><thead><tr><th>No</th><th>Date</th><th>Client</th><th>Total</th><th>Actions</th></tr></thead><tbody></tbody></table>
+  </section>
 
-    <!-- INVOICE -->
-    <section id="tab-invoice" class="card tab hidden" role="tabpanel">
-      <div class="row cols-2">
-        <div>
-          <label>Invoice No.</label>
-          <input id="invNo" readonly>
-          <div class="small">Format: <span class="pill">INV-0000</span></div>
-        </div>
-        <div>
-          <label>Date</label>
-          <input id="invDate" type="date">
-        </div>
-        <div>
-          <label>Bill To (Client)</label>
-          <input id="invClient" placeholder="Client name">
-        </div>
-        <div>
-          <label>Contact (Picker)</label>
-          <div style="display:flex;gap:8px;align-items:center">
-            <input id="invContact" placeholder="Name • Phone">
-            <button class="btn" id="invPick">Pick</button>
-          </div>
-        </div>
+  <!-- INVOICE -->
+  <section id="invoice" class="card" role="tabpanel" style="display:none;margin-top:14px">
+    <div class="row" style="align-items:end">
+      <div class="col-6">
+        <label>Invoice No.</label>
+        <input id="invNo" readonly><div class="small">Format: INV-0000</div>
       </div>
+      <div class="col-6">
+        <label>Date</label>
+        <input id="invDate" type="date">
+      </div>
+      <div class="col-6">
+        <label>Client</label><input id="invClient">
+      </div>
+      <div class="col-6">
+        <label>Contact</label><input id="invContact">
+      </div>
+    </div>
 
-      <table class="items" id="invItems">
-        <thead><tr><th>Item</th><th>Description</th><th>Qty</th><th>Unit</th><th>Rate</th><th>Amount</th><th></th></tr></thead>
-        <tbody></tbody>
-      </table>
-      <div class="right" style="margin-top:8px"><button class="btn" id="invAdd">+ Add Item</button></div>
+    <table class="items" id="invItems"><thead><tr><th style="width:40%">Item / Description</th><th>Qty</th><th>Unit</th><th>Rate</th><th>Amount</th><th></th></tr></thead><tbody></tbody></table>
+    <div class="right" style="margin-top:8px"><button class="btn" id="invAdd">+ Add Item</button></div>
 
-      <div class="row cols-3" style="margin-top:10px">
-        <div>
-          <label>Discount ₹</label>
-          <input id="invDisc" type="number" step="0.01" value="0">
-        </div>
-        <div>
-          <label>Advance</label>
-          <input id="invAdvance" type="number" step="0.01" value="0">
-        </div>
-        <div>
-          <label>Currency</label>
-          <input id="invCurr" value="₹">
-        </div>
-      </div>
+    <div class="row" style="margin-top:10px;align-items:end">
+      <div class="col-4"><label>Discount ₹</label><input id="invDisc" type="number" value="0" step="0.01"></div>
+      <div class="col-4"><label>Advance</label><input id="invAdvance" type="number" value="0" step="0.01"></div>
+      <div class="col-4"><label>Currency</label><input id="invCurr" value="₹"></div>
+    </div>
 
-      <div style="display:grid;grid-template-columns:1fr 320px;gap:12px;margin-top:12px;align-items:start">
-        <div>
-          <label>Notes (this Invoice)</label>
-          <textarea id="invNotes"></textarea>
-        </div>
-        <div>
-          <div class="kv"><span>Sub Total</span><strong id="invSub">₹0.00</strong></div>
-          <div class="kv"><span>Discount</span><strong id="invDiscAmt">₹0.00</strong></div>
-          <div class="kv"><span>Advance</span><strong id="invAdvAmt">₹0.00</strong></div>
-          <div class="kv"><span>Final Amount</span><strong id="invFinal">₹0.00</strong></div>
-        </div>
+    <div style="display:grid;grid-template-columns:1fr 320px;gap:12px;margin-top:12px">
+      <div><label>Invoice Notes</label><textarea id="invNotes"></textarea></div>
+      <div>
+        <div style="display:flex;justify-content:space-between;padding:8px"><span>Sub Total</span><strong id="invSub">₹0.00</strong></div>
+        <div style="display:flex;justify-content:space-between;padding:8px"><span>Discount</span><strong id="invDiscAmt">₹0.00</strong></div>
+        <div style="display:flex;justify-content:space-between;padding:8px"><span>Advance</span><strong id="invAdvAmt">₹0.00</strong></div>
+        <div style="display:flex;justify-content:space-between;padding:8px"><span>Final Amount</span><strong id="invFinal">₹0.00</strong></div>
       </div>
+    </div>
 
-      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
-        <button class="btn primary" id="invSave">Save Invoice</button>
-        <button class="btn" id="invClear">Clear</button>
-      </div>
+    <div class="right" style="margin-top:12px">
+      <button class="btn primary" id="invSave">Save Invoice</button>
+      <button class="btn" id="invPDF">Export PDF</button>
+    </div>
 
-      <div style="margin-top:14px">
-        <h3 style="margin:0 0 8px">Saved Invoices</h3>
-        <table class="items" id="tblInvoices"><thead><tr><th>No</th><th>Date</th><th>Client</th><th>Total</th><th>Actions</th></tr></thead><tbody></tbody></table>
-      </div>
-    </section>
+    <h3 style="margin-top:18px">Saved Invoices</h3>
+    <table id="tblInvoices" class="saved-table"><thead><tr><th>No</th><th>Date</th><th>Client</th><th>Total</th><th>Actions</th></tr></thead><tbody></tbody></table>
+  </section>
 
-    <!-- EXPENSES -->
-    <section id="tab-expenses" class="card tab hidden" role="tabpanel">
-      <div class="row cols-3">
-        <div>
-          <label>Invoice No.</label>
-          <select id="expInv"></select>
-          <div class="small">Invoice Total: <strong id="expInvTotal">₹0.00</strong></div>
-        </div>
-        <div>
-          <label>Date</label>
-          <input id="expDate" type="date">
-        </div>
-        <div>
-          <label>Category</label>
-          <div style="display:flex;gap:8px">
-            <select id="expCat"></select>
-            <button class="btn" id="catAdd">Add</button>
-            <button class="btn" id="catDel">Delete</button>
-          </div>
-        </div>
+  <!-- EXPENSES -->
+  <section id="expenses" class="card" role="tabpanel" style="display:none;margin-top:14px">
+    <div class="row" style="align-items:end">
+      <div class="col-4">
+        <label>Invoice No. (optional)</label>
+        <select id="expInv"><option value="">-- none --</option></select>
       </div>
+      <div class="col-4"><label>Date</label><input id="expDate" type="date"></div>
+      <div class="col-4"><label>Category</label><input id="expCat" placeholder="Category"></div>
+    </div>
+    <div class="row" style="margin-top:8px;align-items:end">
+      <div class="col-4"><label>Amount</label><input id="expAmt" type="number" step="0.01"></div>
+      <div class="col-4"><label>Note</label><input id="expNote"></div>
+      <div class="col-4 right"><button class="btn" id="expAdd">+ Add Expense</button></div>
+    </div>
 
-      <div class="row cols-3" style="margin-top:8px">
-        <div><label>Amount</label><input id="expAmt" type="number" step="0.01"></div>
-        <div><label>Note</label><input id="expNote"></div>
-        <div class="right" style="align-items:end"><button class="btn" id="expAdd">+ Add Expense</button></div>
-      </div>
+    <h3 style="margin-top:12px">Expenses (selected invoice)</h3>
+    <table id="tblExpByInv" class="saved-table"><thead><tr><th>Date</th><th>Category</th><th>Amount</th><th>Note</th><th></th></tr></thead><tbody></tbody></table>
+  </section>
 
-      <div style="display:grid;grid-template-columns:1fr 360px;gap:12px;margin-top:12px">
-        <div>
-          <h3>Expenses (Selected Invoice)</h3>
-          <table class="items" id="tblExpByInv"><thead><tr><th>Date</th><th>Category</th><th>Amount</th><th>Note</th><th></th></tr></thead><tbody></tbody></table>
-        </div>
-        <div>
-          <h3>Summary</h3>
-          <div class="kv"><span>Invoice Total</span><strong id="sumInv">₹0.00</strong></div>
-          <div class="kv"><span>Total Expenses</span><strong id="sumExp">₹0.00</strong></div>
-          <div class="kv"><span>Balance</span><strong id="sumBal">₹0.00</strong></div>
-        </div>
-      </div>
-    </section>
+  <!-- REPORTS -->
+  <section id="reports" class="card" role="tabpanel" style="display:none;margin-top:14px">
+    <h3>Reports</h3>
+    <div style="display:flex;gap:8px"><input id="repFrom" type="date"><input id="repTo" type="date"><input id="repSearch" placeholder="Client or Invoice"><button class="btn" id="repRun">Run</button></div>
+    <table id="tblReport" class="saved-table" style="margin-top:8px"><thead><tr><th>Invoice</th><th>Date</th><th>Client</th><th>Invoice Total</th><th>Total Expenses</th><th>Balance</th></tr></thead><tbody></tbody></table>
+  </section>
 
-    <!-- REPORTS -->
-    <section id="tab-reports" class="card tab hidden" role="tabpanel">
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
-        <input id="repFrom" type="date">
-        <input id="repTo" type="date">
-        <input id="repSearch" placeholder="Client or Invoice">
-        <button class="btn" id="repRun">Run</button>
-        <button class="btn" id="repCSV">CSV</button>
-      </div>
-      <table class="items" id="tblReport"><thead><tr><th>Invoice</th><th>Date</th><th>Client</th><th>Invoice Total</th><th>Total Expenses</th><th>Balance</th></tr></thead><tbody></tbody></table>
-    </section>
+  <!-- WHATSAPP PREVIEW -->
+  <section id="whats" class="card" role="tabpanel" style="display:none;margin-top:14px">
+    <h3>WhatsApp Preview</h3>
+    <div style="display:flex;gap:8px;align-items:center"><select id="waType"><option value="estimate">Estimate</option><option value="invoice">Invoice</option></select><select id="waRef"></select><button class="btn" id="waOpen">Open WhatsApp</button></div>
+    <textarea id="waText" style="width:100%;min-height:180px;margin-top:8px"></textarea>
+  </section>
 
-    <!-- PICK -->
-    <section id="tab-pick" class="card tab hidden" role="tabpanel">
-      <h3>Contact Picker</h3>
-      <div style="display:flex;gap:8px;align-items:center">
-        <button class="btn" id="btnPickSample">Pick Contact</button>
-        <input id="pickedResult" placeholder="Picked contact will appear here">
-      </div>
-      <div class="small" style="margin-top:8px">Contact Picker mobile-only (Chrome Android). Desktop gets prompts.</div>
-    </section>
+  <!-- SETTINGS -->
+  <section id="settings" class="card" role="tabpanel" style="display:none;margin-top:14px">
+    <h3>Settings</h3>
+    <div class="row">
+      <div class="col-4"><label>Business Name</label><input id="bizName"></div>
+      <div class="col-4"><label>Website</label><input id="bizWeb"></div>
+      <div class="col-4"><label>Notify Email</label><input id="notifyEmail"></div>
+    </div>
+    <div style="margin-top:8px"><label>Permanent Notes</label><textarea id="bizNotes"></textarea></div>
+    <div class="right" style="margin-top:8px"><button class="btn primary" id="saveSettings">Save</button><button class="btn" id="resetAll">Reset All</button></div>
+  </section>
 
-    <!-- WHATSAPP -->
-    <section id="tab-whats" class="card tab hidden" role="tabpanel">
-      <h3>WhatsApp Preview</h3>
-      <div class="row cols-3">
-        <div>
-          <label>Type</label>
-          <select id="waType">
-            <option value="estimate">Estimate</option>
-            <option value="invoice">Invoice</option>
-          </select>
-        </div>
-        <div>
-          <label>Select Ref</label>
-          <select id="waRef"></select>
-        </div>
-        <div style="display:flex;align-items:end">
-          <button class="btn" id="waOpen">Open WhatsApp</button>
-        </div>
-      </div>
-      <div style="margin-top:10px">
-        <textarea id="waText" style="width:100%;min-height:200px"></textarea>
-      </div>
-    </section>
-
-    <!-- SETTINGS -->
-    <section id="tab-settings" class="card tab hidden" role="tabpanel">
-      <div class="row cols-3">
-        <div><label>Business Name</label><input id="bizName"></div>
-        <div><label>Website</label><input id="bizWeb"></div>
-        <div><label>Notify Email</label><input id="notifyEmail"></div>
-      </div>
-      <div style="margin-top:10px"><label>Permanent Notes</label><textarea id="bizNotes"></textarea></div>
-      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
-        <button class="btn primary" id="saveSettings">Save</button>
-        <button class="btn" id="resetAll">Reset</button>
-      </div>
-    </section>
-  </div>
+</div>
 
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-  // Short helpers
+// Simple single-file app JS
+(function(){
+  // helpers
   const $ = s => document.querySelector(s);
   const $$ = s => Array.from(document.querySelectorAll(s));
-  const KEY = 'ei_sf_fixed_v1';
+  const KEY = 'bm_sf_v2';
 
-  // DB
+  // default DB
   function defaultDB(){ return {
-    counters: { est: 0, inv: 0 }, // start at 0 -> displays EST-0000 / INV-0000
-    settings: { name: 'Vaibhav Enterprises', web: 'http://www.vaibhaventerprises.info', notify: 'dalvivaibhav4562@gmail.com', notes: '' },
-    estimates: [], invoices: [], expenses: [], cats: ['Material','Transport','Labour']
-  }; }
-  let DB;
-  try { DB = JSON.parse(localStorage.getItem(KEY)) || defaultDB(); } catch(e){ DB = defaultDB(); }
+    counters: { est: 0, inv: 0 },
+    settings: { name:'Vaibhav Enterprises', web:'http://www.vaibhaventerprises.info', notify:'dalvivaibhav4562@gmail.com', notes:'' },
+    estimates: [], invoices: [], expenses: []
+  };}
 
+  let DB;
+  try{ DB = JSON.parse(localStorage.getItem(KEY)) || defaultDB(); }catch(e){ DB = defaultDB(); }
   function saveDB(){ localStorage.setItem(KEY, JSON.stringify(DB)); }
 
-  // Utilities
-  const pad4 = n => String(n).padStart(4,'0');
-  const nextEstNo = () => `EST-${pad4(DB.counters.est)}`;
-  const nextInvNo = () => `INV-${pad4(DB.counters.inv)}`;
-  const today = () => new Date().toISOString().slice(0,10);
-  const fmt = (n,curr='₹') => curr + (isNaN(n)?'0.00':Number(n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}));
+  const pad4 = n=>String(n).padStart(4,'0');
+  const nextEstNo = ()=> `EST-${pad4(DB.counters.est)}`;
+  const nextInvNo = ()=> `INV-${pad4(DB.counters.inv)}`;
+  const today = ()=> new Date().toISOString().slice(0,10);
+  const fmt = (n,curr='₹')=> curr + (isNaN(n)?'0.00':Number(n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}));
 
   // Tabs
-  $$('.tabbtn').forEach(btn => btn.addEventListener('click', () => {
-    $$('.tabbtn').forEach(b=>b.setAttribute('aria-selected','false'));
-    btn.setAttribute('aria-selected','true');
-    const t = btn.dataset.tab;
-    $$('.tab').forEach(sec => sec.classList.add('hidden'));
-    document.getElementById('tab-'+t).classList.remove('hidden');
-    if(t === 'expenses') renderExpInvOptions();
-    if(t === 'whats') refreshWARefs();
-    if(t === 'reports') renderReport();
-  }));
+  $$('.tabbtn').forEach(btn=>{
+    btn.addEventListener('click', ()=> {
+      $$('.tabbtn').forEach(b=>b.setAttribute('aria-selected','false'));
+      btn.setAttribute('aria-selected','true');
+      const tab = btn.dataset.tab;
+      $$('.card[role="tabpanel"]').forEach(s=>s.style.display='none');
+      document.getElementById(tab).style.display = 'block';
+      if(tab==='whats') refreshWARefs();
+      if(tab==='expenses') renderExpInvOptions();
+      if(tab==='reports') renderReport();
+    });
+  });
 
-  // Initial values
+  // init fields
   $('#estDate').value = today();
   $('#invDate').value = today();
   $('#expDate').value = today();
   $('#estNo').value = nextEstNo();
   $('#invNo').value = nextInvNo();
+  $('#bizName').value = DB.settings.name;
+  $('#bizWeb').value = DB.settings.web;
+  $('#notifyEmail').value = DB.settings.notify;
+  $('#bizNotes').value = DB.settings.notes;
 
-  // Item row builder (works for both)
+  // Item row builder (Item + Description stacked in first cell)
   function makeItemRow(values){
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td><input class="it-item" placeholder="Item"></td>
-      <td><input class="it-desc" placeholder="Description"></td>
-      <td><input type="number" class="it-qty" value="1" step="0.01"></td>
-      <td><input class="it-unit" placeholder="nos"></td>
-      <td><input type="number" class="it-rate" value="0" step="0.01"></td>
+      <td>
+        <div><input class="it-item" placeholder="Item" style="margin-bottom:6px;padding:6px;border-radius:6px;border:1px solid #edf2f7"></div>
+        <div><textarea class="it-desc" placeholder="Description" style="width:100%;min-height:60px;padding:6px;border-radius:6px;border:1px solid #edf2f7"></textarea></div>
+      </td>
+      <td><input type="number" class="it-qty" value="1" min="0" step="0.01" style="width:80px"></td>
+      <td><input class="it-unit" style="width:80px"></td>
+      <td><input type="number" class="it-rate" value="0" min="0" step="0.01" style="width:120px"></td>
       <td class="it-amt">0.00</td>
       <td><button class="btn del">Delete</button></td>
     `;
     if(values){
-      tr.querySelector('.it-item').value = values.item || '';
-      tr.querySelector('.it-desc').value = values.desc || '';
-      tr.querySelector('.it-qty').value = values.qty || 1;
-      tr.querySelector('.it-unit').value = values.unit || '';
-      tr.querySelector('.it-rate').value = values.rate || 0;
+      tr.querySelector('.it-item').value = values.item||values.name||'';
+      tr.querySelector('.it-desc').value = values.desc||values.description||'';
+      tr.querySelector('.it-qty').value = values.qty||1;
+      tr.querySelector('.it-unit').value = values.unit||'';
+      tr.querySelector('.it-rate').value = values.rate||values.ratePer||0;
+      tr.querySelector('.it-amt').textContent = (values.amt||values.amount||0).toFixed? (values.amt||values.amount||0).toFixed(2): (values.amt||values.amount||0);
     }
-    const qty = tr.querySelector('.it-qty'), rate = tr.querySelector('.it-rate'), amt = tr.querySelector('.it-amt');
-    function recalc(){ const q = parseFloat(qty.value||0); const r = parseFloat(rate.value||0); amt.textContent = (q*r).toFixed(2); computeAllTotals(); }
-    qty.addEventListener('input', recalc);
-    rate.addEventListener('input', recalc);
-    tr.querySelector('.del').addEventListener('click', ()=>{ tr.remove(); computeAllTotals(); });
-    recalc();
+    // events
+    tr.querySelector('.del').addEventListener('click', ()=> { tr.remove(); computeTotals(); });
+    ['input','change'].forEach(ev => tr.querySelectorAll('input,textarea').forEach(inp => inp.addEventListener(ev, computeTotals)));
     return tr;
   }
 
-  const estTbody = $('#estItems tbody');
-  const invTbody = $('#invItems tbody');
-  // ensure initial rows exist
-  if(estTbody.children.length === 0) estTbody.appendChild(makeItemRow());
-  if(invTbody.children.length === 0) invTbody.appendChild(makeItemRow());
+  const estTbody = document.querySelector('#estItems tbody');
+  const invTbody = document.querySelector('#invItems tbody');
 
-  // Add item buttons
+  if(estTbody.children.length===0) estTbody.appendChild(makeItemRow());
+  if(invTbody.children.length===0) invTbody.appendChild(makeItemRow());
+
   $('#estAdd').addEventListener('click', ()=> estTbody.appendChild(makeItemRow()));
   $('#invAdd').addEventListener('click', ()=> invTbody.appendChild(makeItemRow()));
 
-  // Totals
+  // totals helpers
   function subtotal(tbody){
-    return Array.from(tbody.querySelectorAll('.it-amt')).map(td => parseFloat(td.textContent||0)).reduce((a,b)=>a+b,0);
-  }
-  function computeTotalsEstimate(){
-    const sub = subtotal(estTbody);
-    const discPct = parseFloat($('#estDisc').value||0);
-    const discAmt = sub * discPct / 100;
-    $('#estSub').textContent = fmt(sub,$('#estCurr').value||'₹');
-    $('#estDiscAmt').textContent = fmt(discAmt,$('#estCurr').value||'₹');
-    $('#estFinal').textContent = fmt(Math.max(0, sub-discAmt),$('#estCurr').value||'₹');
-    return { sub, discAmt, final: Math.max(0, sub-discAmt), curr: $('#estCurr').value||'₹' };
-  }
-  function computeTotalsInvoice(){
-    const sub = subtotal(invTbody);
-    const discPct = parseFloat($('#invDisc').value||0);
-    const adv = parseFloat($('#invAdvance').value||0);
-    const discAmt = sub * discPct / 100;
-    const curr = $('#invCurr').value||'₹';
-    $('#invSub').textContent = fmt(sub,curr);
-    $('#invDiscAmt').textContent = fmt(discAmt,curr);
-    $('#invAdvAmt').textContent = fmt(adv,curr);
-    $('#invFinal').textContent = fmt(Math.max(0, sub - discAmt - adv),curr);
-    return { sub, discAmt, advance: adv, final: Math.max(0, sub - discAmt - adv), curr };
-  }
-  function computeAllTotals(){ computeTotalsEstimate(); computeTotalsInvoice(); }
-  $('#estDisc').addEventListener('input', computeTotalsEstimate);
-  $('#estCurr').addEventListener('input', computeTotalsEstimate);
-  $('#invDisc').addEventListener('input', computeTotalsInvoice);
-  $('#invAdvance').addEventListener('input', computeTotalsInvoice);
-  $('#invCurr').addEventListener('input', computeTotalsInvoice);
-
-  // Collect items
-  function collectItems(tbody){
-    return Array.from(tbody.querySelectorAll('tr')).map(tr=>{
-      const item = tr.querySelector('.it-item')?.value?.trim();
-      if(!item) return null;
-      return {
-        item,
-        desc: tr.querySelector('.it-desc').value.trim(),
-        qty: +tr.querySelector('.it-qty').value || 0,
-        unit: tr.querySelector('.it-unit').value.trim(),
-        rate: +tr.querySelector('.it-rate').value || 0,
-        amt: parseFloat(tr.querySelector('.it-amt').textContent||0)
-      };
-    }).filter(Boolean);
+    return Array.from(tbody.querySelectorAll('.it-amt')).map(td=>parseFloat(td.textContent||0)).reduce((a,b)=>a+b,0);
   }
 
-  // Save Estimate
+  function computeTotals(){
+    // estimate
+    Array.from(estTbody.querySelectorAll('tr')).forEach(tr=>{
+      const q = parseFloat(tr.querySelector('.it-qty').value||0);
+      const r = parseFloat(tr.querySelector('.it-rate').value||0);
+      tr.querySelector('.it-amt').textContent = (q*r).toFixed(2);
+    });
+    const estSub = subtotal(estTbody);
+    const estDisc = parseFloat($('#estDisc').value||0);
+    const estFinal = Math.max(0, estSub - estDisc);
+    $('#estSub').textContent = fmt(estSub,$('#estCurr').value||'₹');
+    $('#estDiscAmt').textContent = fmt(estDisc,$('#estCurr').value||'₹');
+    $('#estFinal').textContent = fmt(estFinal,$('#estCurr').value||'₹');
+
+    // invoice
+    Array.from(invTbody.querySelectorAll('tr')).forEach(tr=>{
+      const q = parseFloat(tr.querySelector('.it-qty').value||0);
+      const r = parseFloat(tr.querySelector('.it-rate').value||0);
+      tr.querySelector('.it-amt').textContent = (q*r).toFixed(2);
+    });
+    const invSub = subtotal(invTbody);
+    const invDisc = parseFloat($('#invDisc').value||0);
+    const invAdv = parseFloat($('#invAdvance').value||0);
+    const invFinal = Math.max(0, invSub - invDisc - invAdv);
+    $('#invSub').textContent = fmt(invSub,$('#invCurr').value||'₹');
+    $('#invDiscAmt').textContent = fmt(invDisc,$('#invCurr').value||'₹');
+    $('#invAdvAmt').textContent = fmt(invAdv,$('#invCurr').value||'₹');
+    $('#invFinal').textContent = fmt(invFinal,$('#invCurr').value||'₹');
+  }
+
+  // bind inputs
+  ['#estDisc','#estCurr','#invDisc','#invAdvance','#invCurr'].forEach(sel=>{
+    const el = document.querySelector(sel);
+    if(el) el.addEventListener('input', computeTotals);
+  });
+
+  computeTotals();
+
+  // Save estimate
   $('#estSave').addEventListener('click', ()=>{
-    const totals = computeTotalsEstimate();
+    const items = collectItems(estTbody);
+    if(items.length===0){ alert('Add item'); return; }
     const obj = {
       no: $('#estNo').value.trim() || nextEstNo(),
       date: $('#estDate').value || today(),
       client: $('#estClient').value.trim(),
       contact: $('#estContact').value.trim(),
-      items: collectItems(estTbody),
-      totals: { sub: totals.sub, discAmt: totals.discAmt, finalAmt: totals.final },
-      curr: totals.curr,
-      notes: $('#estNotes').value.trim()
+      items,
+      totals: { sub: subtotal(estTbody), discAmt: parseFloat($('#estDisc').value||0), final: parseFloat((subtotal(estTbody) - parseFloat($('#estDisc').value||0)).toFixed(2)) },
+      curr: $('#estCurr').value||'₹',
+      notes: $('#estNotes').value||''
     };
     DB.estimates.push(obj);
-    // increment counter AFTER saving so next displayed number changes
-    DB.counters.est = DB.counters.est + 1;
+    DB.counters.est += 1;
     saveDB();
     renderEstimates();
     $('#estNo').value = nextEstNo();
     alert('Estimate saved ✅');
   });
 
-  // Save Invoice
+  // Save invoice
   $('#invSave').addEventListener('click', ()=>{
-    const totals = computeTotalsInvoice();
+    const items = collectItems(invTbody);
+    if(items.length===0){ alert('Add item'); return; }
     const obj = {
       no: $('#invNo').value.trim() || nextInvNo(),
       date: $('#invDate').value || today(),
       client: $('#invClient').value.trim(),
       contact: $('#invContact').value.trim(),
-      items: collectItems(invTbody),
-      totals: { sub: totals.sub, discAmt: totals.discAmt, advance: totals.advance, finalAmt: totals.final },
-      curr: totals.curr,
-      notes: $('#invNotes').value.trim()
+      items,
+      totals: { sub: subtotal(invTbody), discAmt: parseFloat($('#invDisc').value||0), advance: parseFloat($('#invAdvance').value||0), final: parseFloat((subtotal(invTbody) - parseFloat($('#invDisc').value||0) - parseFloat($('#invAdvance').value||0)).toFixed(2)) },
+      curr: $('#invCurr').value||'₹',
+      notes: $('#invNotes').value||''
     };
     DB.invoices.push(obj);
-    DB.counters.inv = DB.counters.inv + 1;
+    DB.counters.inv += 1;
     saveDB();
     renderInvoices();
     renderExpInvOptions();
-    refreshWARefs();
     $('#invNo').value = nextInvNo();
     alert('Invoice saved ✅');
   });
 
-  // Clear buttons
-  $('#estClear').addEventListener('click', ()=>{ $('#estClient').value=''; $('#estContact').value=''; $('#estNotes').value=''; estTbody.innerHTML=''; estTbody.appendChild(makeItemRow()); computeTotalsEstimate(); });
-  $('#invClear').addEventListener('click', ()=>{ $('#invClient').value=''; $('#invContact').value=''; $('#invNotes').value=''; invTbody.innerHTML=''; invTbody.appendChild(makeItemRow()); computeTotalsInvoice(); });
+  // collectItems utility
+  function collectItems(tbody){
+    return Array.from(tbody.querySelectorAll('tr')).map(tr=>{
+      const name = tr.querySelector('.it-item').value.trim();
+      if(!name) return null;
+      return {
+        item: name,
+        desc: tr.querySelector('.it-desc').value.trim(),
+        qty: parseFloat(tr.querySelector('.it-qty').value||0),
+        unit: tr.querySelector('.it-unit').value.trim(),
+        rate: parseFloat(tr.querySelector('.it-rate').value||0),
+        amt: parseFloat(tr.querySelector('.it-amt').textContent||0)
+      };
+    }).filter(Boolean);
+  }
 
-  // Render saved lists
+  // render lists
   function renderEstimates(){
     const tb = $('#tblEstimates tbody'); tb.innerHTML = '';
     DB.estimates.forEach((e,i)=>{
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${e.no}</td><td>${e.date}</td><td>${e.client||'-'}</td><td>${fmt(e.totals.finalAmt,e.curr)}</td>
-        <td>
-          <button class="btn load" data-i="${i}" data-type="est">Load</button>
-          <button class="btn del" data-i="${i}" data-type="est">Delete</button>
-        </td>`;
+      tr.innerHTML = `<td>${e.no}</td><td>${e.date}</td><td>${e.client||''}</td><td>${fmt(e.totals.final||e.totals.finalAmt|| e.totals.final, e.curr||'₹')}</td><td><button class="btn load" data-i="${i}">Load</button> <button class="btn del" data-i="${i}">Delete</button></td>`;
       tb.appendChild(tr);
     });
-    tb.querySelectorAll('button.load').forEach(btn => btn.addEventListener('click', (ev)=>{
-      const idx = +ev.currentTarget.dataset.i; loadEstimate(DB.estimates[idx]);
+    tb.querySelectorAll('.load').forEach(b=>b.addEventListener('click', ev=>{
+      const i = +ev.currentTarget.dataset.i;
+      loadEstimate(DB.estimates[i]);
     }));
-    tb.querySelectorAll('button.del').forEach(btn => btn.addEventListener('click', (ev)=>{
-      const idx = +ev.currentTarget.dataset.i; if(!confirm('Delete estimate?')) return;
-      DB.estimates.splice(idx,1); saveDB(); renderEstimates(); refreshWARefs();
+    tb.querySelectorAll('.del').forEach(b=>b.addEventListener('click', ev=>{
+      const i = +ev.currentTarget.dataset.i;
+      if(confirm('Delete estimate?')){ DB.estimates.splice(i,1); saveDB(); renderEstimates(); refreshWARefs(); }
     }));
   }
 
   function loadEstimate(e){
-    $('#estNo').value = e.no; $('#estDate').value = e.date; $('#estClient').value = e.client; $('#estContact').value = e.contact; $('#estNotes').value = e.notes||''; $('#estCurr').value = e.curr||'₹';
-    estTbody.innerHTML = ''; e.items.forEach(it => estTbody.appendChild(makeItemRow(it))); computeTotalsEstimate();
+    $('#estNo').value = e.no; $('#estDate').value = e.date; $('#estClient').value = e.client; $('#estContact').value = e.contact; $('#estCurr').value = e.curr||'₹'; $('#estNotes').value = e.notes||'';
+    estTbody.innerHTML=''; e.items.forEach(it => estTbody.appendChild(makeItemRow({item:it.item, desc:it.desc, qty:it.qty, unit:it.unit, rate:it.rate, amt:it.amt})));
+    computeTotals();
   }
 
   function renderInvoices(){
     const tb = $('#tblInvoices tbody'); tb.innerHTML = '';
-    DB.invoices.forEach((e,i)=>{
+    DB.invoices.forEach((inv,i)=>{
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${e.no}</td><td>${e.date}</td><td>${e.client||'-'}</td><td>${fmt(e.totals.finalAmt,e.curr)}</td>
-        <td>
-          <button class="btn load" data-i="${i}" data-type="inv">Load</button>
-          <button class="btn del" data-i="${i}" data-type="inv">Delete</button>
-        </td>`;
+      tr.innerHTML = `<td>${inv.no}</td><td>${inv.date}</td><td>${inv.client||''}</td><td>${fmt(inv.totals.final||inv.totals.finalAmt||inv.totals.final,inv.curr||'₹')}</td><td><button class="btn load" data-i="${i}">Load</button> <button class="btn del" data-i="${i}">Delete</button></td>`;
       tb.appendChild(tr);
     });
-    tb.querySelectorAll('button.load').forEach(btn => btn.addEventListener('click', (ev)=>{
-      const idx = +ev.currentTarget.dataset.i; loadInvoice(DB.invoices[idx]);
-    }));
-    tb.querySelectorAll('button.del').forEach(btn => btn.addEventListener('click', (ev)=>{
-      const idx = +ev.currentTarget.dataset.i; if(!confirm('Delete invoice?')) return;
-      DB.invoices.splice(idx,1); saveDB(); renderInvoices(); renderExpInvOptions(); renderReport(); refreshWARefs();
-    }));
+    tb.querySelectorAll('.load').forEach(b=>b.addEventListener('click', ev=>{ loadInvoice(DB.invoices[+ev.currentTarget.dataset.i]); }));
+    tb.querySelectorAll('.del').forEach(b=>b.addEventListener('click', ev=>{ const i=+ev.currentTarget.dataset.i; if(confirm('Delete invoice?')){ DB.invoices.splice(i,1); saveDB(); renderInvoices(); renderExpInvOptions(); renderReport(); refreshWARefs(); }}));
   }
 
-  function loadInvoice(e){
-    $('#invNo').value = e.no; $('#invDate').value = e.date; $('#invClient').value = e.client; $('#invContact').value = e.contact; $('#invNotes').value = e.notes||''; $('#invCurr').value = e.curr||'₹';
-    invTbody.innerHTML = ''; e.items.forEach(it => invTbody.appendChild(makeItemRow(it))); computeTotalsInvoice();
+  function loadInvoice(inv){
+    $('#invNo').value = inv.no; $('#invDate').value = inv.date; $('#invClient').value = inv.client; $('#invContact').value = inv.contact; $('#invCurr').value = inv.curr||'₹'; $('#invNotes').value = inv.notes||''; $('#invDisc').value = inv.totals.discAmt||0; $('#invAdvance').value = inv.totals.advance||0;
+    invTbody.innerHTML=''; inv.items.forEach(it => invTbody.appendChild(makeItemRow({item:it.item, desc:it.desc, qty:it.qty, unit:it.unit, rate:it.rate, amt:it.amt})));
+    computeTotals();
   }
 
-  // Expenses — categories
-  function renderCats(){ $('#expCat').innerHTML = DB.cats.map(c => `<option value="${c}">${c}</option>`).join(''); }
-  $('#catAdd').addEventListener('click', ()=>{
-    const v = prompt('New category name'); if(!v) return;
-    DB.cats.push(v.trim()); saveDB(); renderCats();
-  });
-  $('#catDel').addEventListener('click', ()=>{
-    const v = $('#expCat').value; if(!v) return; if(!confirm('Delete '+v+'?')) return;
-    DB.cats = DB.cats.filter(c=>c!==v); saveDB(); renderCats();
-  });
-
-  // Expenses for invoice
+  // Expenses
   function renderExpInvOptions(){
-    const sel = $('#expInv'); const prev = sel.value;
-    sel.innerHTML = '<option value="">— Select Invoice —</option>' + DB.invoices.map(i => `<option value="${i.no}">${i.no} • ${i.client||''}</option>`).join('');
-    sel.value = DB.invoices.find(i=>i.no===prev) ? prev : '';
-    updateExpInvTotal(); renderExpensesByInv();
+    const sel = $('#expInv'); sel.innerHTML = '<option value="">-- none --</option>' + DB.invoices.map(i=>`<option value="${i.no}">${i.no} • ${i.client||''}</option>`).join('');
+    renderExpensesForSelected();
   }
-  function updateExpInvTotal(){
-    const no = $('#expInv').value; const inv = DB.invoices.find(i=>i.no===no);
-    $('#expInvTotal').textContent = inv ? fmt(inv.totals.finalAmt,inv.curr) : '₹0.00';
+  function renderExpensesForSelected(){
+    const tb = $('#tblExpByInv tbody'); tb.innerHTML = ''; const no = $('#expInv').value;
+    const list = DB.expenses.filter(e=>e.invNo===no);
+    list.forEach((x,idx)=>{ const tr=document.createElement('tr'); tr.innerHTML = `<td>${x.date}</td><td>${x.cat}</td><td>${fmt(x.amt)}</td><td>${x.note||''}</td><td><button class="btn del" data-i="${idx}">Delete</button></td>`; tb.appendChild(tr); });
+    tb.querySelectorAll('.del').forEach(b=>b.addEventListener('click', ev=>{ const idx=+ev.currentTarget.dataset.i; const rec = list[idx]; const real = DB.expenses.indexOf(rec); if(real>=0){ DB.expenses.splice(real,1); saveDB(); renderExpensesForSelected(); renderReport(); }}));
   }
-  $('#expInv').addEventListener('change', ()=>{ updateExpInvTotal(); renderExpensesByInv(); });
 
   $('#expAdd').addEventListener('click', ()=>{
-    const invNo = $('#expInv').value; if(!invNo){ alert('Select invoice'); return; }
-    const rec = { invNo, date: $('#expDate').value||today(), cat: $('#expCat').value||'General', amt: +$('#expAmt').value||0, note: $('#expNote').value.trim() };
-    if(rec.amt <= 0){ alert('Amount must be > 0'); return; }
-    DB.expenses.push(rec); saveDB(); $('#expAmt').value=''; $('#expNote').value=''; renderExpensesByInv(); renderReport();
+    const invNo = $('#expInv').value || '';
+    const date = $('#expDate').value || today();
+    const cat = $('#expCat').value || 'General';
+    const amt = parseFloat($('#expAmt').value||0);
+    const note = $('#expNote').value||'';
+    if(amt<=0){ alert('Enter amount'); return; }
+    DB.expenses.push({ invNo, date, cat, amt, note });
+    saveDB(); $('#expAmt').value=''; $('#expNote').value=''; renderExpensesForSelected(); renderReport();
   });
-
-  function renderExpensesByInv(){
-    const tb = $('#tblExpByInv tbody'); tb.innerHTML = '';
-    const no = $('#expInv').value; const inv = DB.invoices.find(i=>i.no===no); const curr = inv ? inv.curr : '₹';
-    const list = DB.expenses.filter(e => e.invNo === no);
-    list.forEach((e, idx) => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${e.date}</td><td>${e.cat}</td><td>${fmt(e.amt,curr)}</td><td>${e.note||''}</td><td><button class="btn del" data-i="${idx}">Delete</button></td>`;
-      tb.appendChild(tr);
-    });
-    tb.querySelectorAll('.del').forEach(b => b.addEventListener('click', (ev)=>{
-      const idx = +ev.currentTarget.dataset.i;
-      const list = DB.expenses.filter(e => e.invNo === no);
-      const rec = list[idx];
-      const realIdx = DB.expenses.indexOf(rec);
-      if(realIdx >= 0){ DB.expenses.splice(realIdx, 1); saveDB(); renderExpensesByInv(); renderReport(); }
-    }));
-    const invTotal = inv ? inv.totals.finalAmt : 0;
-    const expTotal = list.reduce((a,b)=>a+b.amt,0);
-    $('#sumInv').textContent = fmt(invTotal,curr);
-    $('#sumExp').textContent = fmt(expTotal,curr);
-    $('#sumBal').textContent = fmt(invTotal-expTotal,curr);
-  }
 
   // Reports
   $('#repRun').addEventListener('click', renderReport);
-  $('#repCSV').addEventListener('click', ()=>{
-    const rows = [['Invoice','Date','Client','Invoice Total','Total Expenses','Balance']];
-    DB.invoices.forEach(inv => {
-      const expSum = DB.expenses.filter(e=>e.invNo===inv.no).reduce((a,b)=>a+b.amt,0);
-      rows.push([inv.no,inv.date,inv.client||'',inv.totals.finalAmt,expSum,inv.totals.finalAmt-expSum]);
-    });
-    const csv = rows.map(r=>r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
-    const blob = new Blob([csv],{type:'text/csv'}); const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = 'report.csv'; a.click(); URL.revokeObjectURL(url);
-  });
-
   function renderReport(){
     const tb = $('#tblReport tbody'); tb.innerHTML = '';
     const from = $('#repFrom').value ? new Date($('#repFrom').value) : null;
     const to = $('#repTo').value ? new Date($('#repTo').value) : null;
     const q = ($('#repSearch').value||'').toLowerCase();
-    DB.invoices.forEach(inv => {
+    DB.invoices.forEach(inv=>{
       const dt = new Date(inv.date);
       if(from && dt < from) return;
       if(to && dt > to) return;
-      if(q && !(inv.no + inv.client).toLowerCase().includes(q)) return;
-      const exp = DB.expenses.filter(e=>e.invNo===inv.no).reduce((a,b)=>a+b.amt,0);
+      if(q && !(inv.no+inv.client).toLowerCase().includes(q)) return;
+      const expSum = DB.expenses.filter(e=>e.invNo===inv.no).reduce((a,b)=>a+b.amt,0);
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${inv.no}</td><td>${inv.date}</td><td>${inv.client||''}</td><td>${fmt(inv.totals.finalAmt,inv.curr)}</td><td>${fmt(exp,inv.curr)}</td><td>${fmt(inv.totals.finalAmt-exp,inv.curr)}</td>`;
+      tr.innerHTML = `<td>${inv.no}</td><td>${inv.date}</td><td>${inv.client||''}</td><td>${fmt(inv.totals.final||inv.totals.finalAmt||inv.totals.final,inv.curr||'₹')}</td><td>${fmt(expSum,inv.curr||'₹')}</td><td>${fmt((inv.totals.final||inv.totals.finalAmt||inv.totals.final)-expSum,inv.curr||'₹')}</td>`;
       tb.appendChild(tr);
     });
   }
 
-  // WhatsApp message builder + preview
-  function buildMessage(obj, kind='Invoice'){
+  // WhatsApp builder and Accept handling
+  function buildMessage(obj, kind='Estimate'){
     const lines = [];
-    lines.push(DB.settings.name || 'Vaibhav Enterprises'); lines.push('');
-    lines.push(`${kind} No.: ${obj.no}`); lines.push(`Customer Name: ${obj.client||''}`); lines.push(`Contact No.: ${obj.contact||''}`); lines.push(`Date: ${obj.date}`); lines.push('');
+    lines.push(DB.settings.name||'Vaibhav Enterprises');
+    lines.push('');
+    lines.push(`${kind} No.: ${obj.no}`);
+    lines.push(`Customer Name: ${obj.client||''}`);
+    lines.push(`Contact No.: ${obj.contact||''}`);
+    lines.push(`Date: ${obj.date||''}`);
+    lines.push('');
     lines.push('Item Details:');
-    obj.items.forEach(it => {
+    (obj.items||[]).forEach(it=>{
       lines.push(`• ${it.item} ${it.desc?('- '+it.desc):''}`);
-      lines.push(`   Qty: ${it.qty} ${it.unit||''}, Rate: ${fmt(it.rate,obj.curr)}, Amount: ${fmt(it.amt,obj.curr)}`);
+      lines.push(`   Qty: ${it.qty} ${it.unit||''}, Rate: ${fmt(it.rate,obj.curr)}, Amount: ${fmt(it.amt||0,obj.curr)}`);
     });
-    lines.push(''); const sub = obj.totals.sub ?? obj.items.reduce((a,b)=>a+(+b.amt||0),0);
-    if(kind === 'Invoice') lines.push(`Advance: ${fmt(obj.totals.advance || 0,obj.curr)}`);
-    lines.push(`Subtotal: ${fmt(sub,obj.curr)}`); lines.push(`Final Amount: ${fmt(obj.totals.finalAmt,obj.curr)}`); lines.push(''); lines.push('For more information, visit our website:'); lines.push(DB.settings.web || 'http://www.vaibhaventerprises.info'); lines.push('');
-    // Accept link (mailto fallback for file://)
-    let accept;
-    if(location.protocol === 'file:'){ accept = `mailto:${DB.settings.notify}?subject=Accept%20${encodeURIComponent(kind)}%20${encodeURIComponent(obj.no)}&body=Customer%20accepted%20${encodeURIComponent(kind)}%20${encodeURIComponent(obj.no)}`; }
-    else { accept = location.origin + location.pathname + `?accept=1&type=${kind.toLowerCase()}&no=${encodeURIComponent(obj.no)}`; }
-    lines.push('Accept: ' + accept);
+    if(obj.totals && typeof obj.totals.discAmt!=='undefined') lines.push(`Discount: ${fmt(obj.totals.discAmt,obj.curr||'₹')}`);
+    lines.push(`Subtotal: ${fmt(obj.totals.sub||0,obj.curr||'₹')}`);
+    lines.push(`Final Amount: ${fmt(obj.totals.final||0,obj.curr||'₹')}`);
+    lines.push('');
+    lines.push('For more information, visit our website:');
+    lines.push(DB.settings.web || 'http://www.vaibhaventerprises.info');
+    // Accept links
+    const mail = DB.settings.notify || 'dalvivaibhav4562@gmail.com';
+    const subject = encodeURIComponent(`${kind} Accepted: ${obj.no}`);
+    const bodyLines = [
+      `${kind} Details:`,
+      `Estimate No: ${obj.no}`,
+      `Work Title: ${obj.notes||''}`,
+      `Name: ${obj.client||''}`,
+      `Address: ${obj.notes||''}`,
+      `Contact: ${obj.contact||''}`,
+      `Estimate Date: ${obj.date||''}`,
+      `Estimate Amount: ${obj.totals.final||0}`,
+      `Customer Response: Accept`
+    ];
+    const body = encodeURIComponent(bodyLines.join('\n'));
+    const mailto = `mailto:${mail}?subject=${subject}&body=${body}`;
+    const webAccept = (location.protocol==='file:'? mailto : location.origin + location.pathname + `?accept=1&type=${kind.toLowerCase()}&no=${encodeURIComponent(obj.no)}`);
+    lines.push('');
+    lines.push(`Accept (email): ${mailto}`);
+    lines.push(`Accept (web): ${webAccept}`);
     return lines.join('\n');
   }
 
   function refreshWARefs(){
     const type = $('#waType').value;
-    const sel = $('#waRef');
-    const list = type === 'estimate' ? DB.estimates : DB.invoices;
+    const sel = $('#waRef'); sel.innerHTML = '';
+    const list = type==='estimate' ? DB.estimates : DB.invoices;
     sel.innerHTML = list.map((x,i)=>`<option value="${i}">${x.no} • ${x.client||''}</option>`).join('');
-    if(list.length){ $('#waText').value = buildMessage(list[0], type === 'estimate' ? 'Estimate' : 'Invoice'); }
-    else $('#waText').value = '';
+    if(list.length) $('#waText').value = buildMessage(list[0], type==='estimate'?'Estimate':'Invoice'); else $('#waText').value = '';
   }
   $('#waType').addEventListener('change', refreshWARefs);
-  $('#waRef').addEventListener('change', ()=> {
-    const type = $('#waType').value; const idx = +$('#waRef').value; const list = type === 'estimate' ? DB.estimates : DB.invoices;
-    if(list[idx]) $('#waText').value = buildMessage(list[idx], type === 'estimate' ? 'Estimate' : 'Invoice'); else $('#waText').value = '';
-  });
-  $('#waOpen').addEventListener('click', ()=> {
-    const txt = $('#waText').value.trim(); if(!txt) { alert('No message'); return; }
-    const url = 'https://wa.me/?text=' + encodeURIComponent(txt);
-    window.open(url,'_blank');
-  });
+  $('#waRef').addEventListener('change', ()=>{ const type=$('#waType').value; const idx=+$('#waRef').value; const list = type==='estimate'?DB.estimates:DB.invoices; if(list[idx]) $('#waText').value = buildMessage(list[idx], type==='estimate'?'Estimate':'Invoice'); });
 
-  // Contact Picker
-  async function pickContactTo(el){
-    if(navigator.contacts && navigator.contacts.select){
-      try{
-        const res = await navigator.contacts.select(['name','tel','email'], {multiple:false});
-        if(res && res.length){ const p = res[0]; const name = (p.name && p.name[0]) || ''; const tel = (p.tel && p.tel[0]) || ''; el.value = name + (tel ? (' • '+tel) : ''); }
-      }catch(e){ alert('Contact picker denied / not supported'); }
-    } else {
-      const n = prompt('Contact name'); if(!n) return; const t = prompt('Phone or email (optional)'); el.value = n + (t ? (' • '+t) : '');
-    }
-  }
-  $('#estPick').addEventListener('click', ()=> pickContactTo($('#estContact')));
-  $('#invPick').addEventListener('click', ()=> pickContactTo($('#invContact')));
-  $('#btnPickSample').addEventListener('click', async ()=>{
-    const temp = document.createElement('input'); await pickContactTo(temp); $('#pickedResult').value = temp.value || '';
-  });
+  $('#waOpen').addEventListener('click', ()=>{ const txt = $('#waText').value.trim(); if(!txt){ alert('No message'); return; } window.open('https://wa.me/?text=' + encodeURIComponent(txt),'_blank'); });
 
-  // Settings
-  function loadSettingsUI(){ $('#bizName').value = DB.settings.name || ''; $('#bizWeb').value = DB.settings.web || ''; $('#notifyEmail').value = DB.settings.notify || ''; $('#bizNotes').value = DB.settings.notes || ''; }
-  $('#saveSettings').addEventListener('click', ()=> {
-    DB.settings.name = $('#bizName').value.trim() || 'Vaibhav Enterprises';
-    DB.settings.web = $('#bizWeb').value.trim() || 'http://www.vaibhaventerprises.info';
-    DB.settings.notify = $('#notifyEmail').value.trim() || 'dalvivaibhav4562@gmail.com';
-    DB.settings.notes = $('#bizNotes').value || '';
-    saveDB(); alert('Settings saved');
-  });
-  $('#resetAll').addEventListener('click', ()=> { if(confirm('Delete ALL local data?')){ localStorage.removeItem(KEY); location.reload(); } });
-
-  // Backup / Restore / Print
-  $('#btnBackup').addEventListener('click', ()=>{
-    const blob = new Blob([JSON.stringify(DB,null,2)], {type:'application/json'}); const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = 'ei-backup.json'; a.click(); URL.revokeObjectURL(url);
-  });
-  $('#btnRestore').addEventListener('click', ()=>{
-    const inp = document.createElement('input'); inp.type='file'; inp.accept='application/json';
-    inp.onchange = async ()=> { const f = inp.files[0]; if(!f) return; const txt = await f.text(); try{ DB = JSON.parse(txt); saveDB(); alert('Restored'); location.reload(); }catch(e){ alert('Invalid file'); } };
-    inp.click();
-  });
-  $('#btnPrint').addEventListener('click', ()=> window.print());
-
-  // Accept flow (if opened via hosted URL with ?accept=1...)
+  // Accept flow when opened via ?accept=1&type=estimate&no=...
   (function handleAcceptURL(){
-    const p = new URLSearchParams(location.search);
-    if(!p.get('accept')) return;
-    document.body.innerHTML = `<div style="padding:30px;color:#fff;font-family:inherit;background:#071022;min-height:100vh;display:flex;align-items:center;justify-content:center"><div style="max-width:760px;background:#0f1726;padding:20px;border-radius:10px"><h2>Thank you</h2><p>Response recorded. Click notify to send email to business.</p><p><button id="notifyBtn" style="padding:10px;border-radius:8px">Notify</button></p></div></div>`;
-    document.getElementById('notifyBtn').addEventListener('click', ()=> {
+    try{
+      const p = new URLSearchParams(location.search);
+      if(!p.get('accept')) return;
+      const type = p.get('type') || 'estimate';
+      const no = p.get('no') || '';
+      const rec = (type==='estimate' ? DB.estimates.find(x=>x.no===no) : DB.invoices.find(x=>x.no===no));
+      const title = rec?.notes || '';
+      const name = rec?.client || '';
+      const address = rec?.notes || '';
+      const contact = rec?.contact || '';
+      const date = rec?.date || '';
+      const amount = rec?.totals?.final || 0;
       const mail = DB.settings.notify || 'dalvivaibhav4562@gmail.com';
-      const subject = encodeURIComponent('Customer has responded to estimate/invoice');
-      const body = encodeURIComponent('Customer accepted. Reference from link.');
-      window.location.href = `mailto:${mail}?subject=${subject}&body=${body}`;
-    });
+      const subject = encodeURIComponent('Customer has responded to the estimate/invoice');
+      const bodyLines = [
+        'Estimate Details:',
+        `Estimate No: ${no || ''}`,
+        `Work Title: ${title}`,
+        `Name: ${name}`,
+        `Address: ${address}`,
+        `Contact: ${contact}`,
+        `Estimate Date: ${date}`,
+        `Estimate Amount: ${amount}`,
+        'Customer Response: Accept'
+      ];
+      const body = encodeURIComponent(bodyLines.join('\n'));
+      document.body.innerHTML = `<div style="padding:30px;color:#022432;background:#fff;min-height:100vh"><h2>Thank you — your response was recorded</h2><p style="margin-top:6px">Click the button below to notify the business owner via email.</p><p style="margin-top:18px"><button id="notifyBtn" style="padding:10px 14px;border-radius:8px;border:0;background:#22c55e;color:#06220f">Notify Owner by Email</button></p></div>`;
+      document.getElementById('notifyBtn').addEventListener('click', ()=>{ window.location.href = `mailto:${mail}?subject=${subject}&body=${body}`; });
+    }catch(e){ console.error('Accept flow error', e); }
   })();
 
-  // initial render
-  function boot(){
-    renderCats(); renderEstimates(); renderInvoices(); renderExpInvOptions(); renderReport(); loadSettingsUI(); computeAllTotals();
-    console.log('App initialized'); // helpful to check console if user reports buttons not working
+  // PDF (simple)
+  function generatePDF(htmlContent, filename){
+    if(window.html2pdf){ html2pdf().from(htmlContent).set({filename}).save(); return; }
+    alert('PDF export requires html2pdf library (online).');
   }
-  boot();
-});
+  $('#estPDF').addEventListener('click', ()=>{
+    const obj = { no: $('#estNo').value, date: $('#estDate').value, client: $('#estClient').value, contact: $('#estContact').value, items: collectItems(estTbody), totals: { sub: subtotal(estTbody), discAmt: parseFloat($('#estDisc').value||0), final: parseFloat((subtotal(estTbody)-parseFloat($('#estDisc').value||0)).toFixed(2)) }, curr: $('#estCurr').value||'₹', notes: $('#estNotes').value||'' };
+    const html = `<div><h2>Estimate ${obj.no}</h2><p>${obj.client}</p><pre>${buildMessage(obj,'Estimate')}</pre></div>`;
+    generatePDF(html, `${obj.no}.pdf`);
+  });
+  $('#invPDF').addEventListener('click', ()=>{
+    const obj = { no: $('#invNo').value, date: $('#invDate').value, client: $('#invClient').value, contact: $('#invContact').value, items: collectItems(invTbody), totals: { sub: subtotal(invTbody), discAmt: parseFloat($('#invDisc').value||0), advance: parseFloat($('#invAdvance').value||0), final: parseFloat((subtotal(invTbody)-parseFloat($('#invDisc').value||0)-parseFloat($('#invAdvance').value||0)).toFixed(2)) }, curr: $('#invCurr').value||'₹', notes: $('#invNotes').value||'' };
+    const html = `<div><h2>Invoice ${obj.no}</h2><p>${obj.client}</p><pre>${buildMessage(obj,'Invoice')}</pre></div>`;
+    generatePDF(html, `${obj.no}.pdf`);
+  });
 
-function sendEstimateAcceptEmail(data){
-  const body = `Estimate Details:%0D%0A` +
-    `Estimate No: ${data.number}%0D%0A` +
-    `Work Title: ${data.title||''}%0D%0A` +
-    `Name: ${data.name}%0D%0A` +
-    `Address: ${data.address||''}%0D%0A` +
-    `Contact: ${data.contact}%0D%0A` +
-    `Estimate Date: ${data.date}%0D%0A` +
-    `Estimate Amount: ${data.amount}%0D%0A` +
-    `Customer Response: Accept`;
-  window.location.href = `mailto:dalvivaibhav4562@gmail.com?subject=Estimate Accepted&body=${body}`;
-}
+  // render adjusts
+  renderEstimates(); renderInvoices(); renderExpInvOptions(); renderReport(); refreshWARefs();
 
+  // settings save/reset
+  $('#saveSettings').addEventListener('click', ()=>{ DB.settings.name = $('#bizName').value; DB.settings.web = $('#bizWeb').value; DB.settings.notify = $('#notifyEmail').value; DB.settings.notes = $('#bizNotes').value; saveDB(); alert('Saved'); });
+  $('#resetAll').addEventListener('click', ()=>{ if(confirm('Delete ALL data?')){ localStorage.removeItem(KEY); location.reload(); } });
+
+  // backup/restore could be added
+
+})(); // IIFE end
 </script>
 </body>
 </html>
