@@ -46,7 +46,36 @@ function saveOrder(){let d=data();if(!d.fields.name?.trim()&&!d.fields.mobile?.t
 function newOrder(skipConfirm=false){if(!skipConfirm&&!confirm('नवीन ऑर्डर सुरू करायची?'))return;f.reset();restoreSignatures({});['salesPlaced','managerPlaced'].forEach(id=>{let el=document.getElementById(id);el.style.left='10px';el.style.top='65%';el.dataset.x='10';el.dataset.y='65%'});items.innerHTML='';count=0;addItem();currentId=null}
 function load(id){let o=orders().find(x=>x.id===id);if(o)fill(o)}
 function del(id){if(!confirm('ही ऑर्डर delete करायची?'))return;localStorage.setItem(KEY,JSON.stringify(orders().filter(x=>x.id!==id)));if(currentId===id){f.reset();items.innerHTML='';count=0;addItem();currentId=null}render()}
-function shareText(o){let d=o.fields||{},s=['Jewellery Order',`Name: ${d.name||''}`,`Address: ${d.address||''} ${d.address2||''}`,`Mobile: ${d.mobile||''}`,`Awak No: ${d.awakNo||''}`,`Date: ${d.awakDate||''}`,`Receipt No: ${d.receiptNo||''}`,`Delivery: ${d.deliveryDate||''}`,`Amount: ${d.rupees||''}`];(o.items||[]).forEach((x,i)=>s.push(`Item ${i+1}: Sample ${x.sample||''}; Whatsapp ${x.whatsapp||''}; Size ${x.size||''}; Length ${x.length||''}; OB ${x.ob||''}; Wt ${x.weight||''}; Remark ${x.remark||''}`));return s.join('\n')}
+function shareText(o){
+  let d=o.fields||{},s=['💎 Jewellery Order 💎'];
+  const add=(label,value)=>{value=String(value??'').trim();if(value)s.push(`${label}: ${value}`)};
+  add('Name',d.name);
+  add('Address',[d.address,d.address2].filter(v=>String(v||'').trim()).join(' '));
+  add('Mobile',d.mobile);
+  add('24 Ct Rate',d.rate24);
+  add('23 Ct Rate',d.rate23);
+  add('22 Ct Rate',d.rate22);
+  add('Awak No',d.awakNo);
+  add('Date',d.awakDate);
+  add('Receipt No',d.receiptNo);
+  add('Date',d.receiptDate);
+  add('Delivery',d.deliveryDate);
+  add('Amount',d.rupees);
+  (o.items||[]).forEach((x,i)=>{
+    s.push('━━━━━━━━━━━━━━',`Item ${i+1}`);
+    addItemLine(s,'Sample',x.sample);
+    addItemLine(s,'Whatsapp',x.whatsapp);
+    addItemLine(s,'Size',x.size);
+    addItemLine(s,'Length',x.length);
+    addItemLine(s,'OB',x.ob);
+    addItemLine(s,'Wt',x.weight);
+    addItemLine(s,'Remark',x.remark);
+    addItemLine(s,'Other',x.other1);
+    addItemLine(s,'Other',x.other2);
+  });
+  return s.join('\n');
+}
+function addItemLine(lines,label,value){value=String(value??'').trim();if(value)lines.push(`${label}: ${value}`)}
 function share(o){window.open('https://wa.me/?text='+encodeURIComponent(shareText(o)),'_blank','noopener')}
 function shareCurrent(){share(data())}
 function csvQ(x){return '"'+String(x??'').replace(/"/g,'""')+'"'}
