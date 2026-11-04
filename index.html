@@ -44,9 +44,10 @@ function clearSignature(key){if(key==='manager'){placedManagerSignature='';let e
 function signaturesData(){return {salesmanSignData:signatureImages.salesman,customerSignData:signatureImages.customer,managerSignData:signatureImages.manager,managerPlacedSignData:placedManagerSignature,salesSignX:document.getElementById('salesPlaced')?.dataset.x||'',salesSignY:document.getElementById('salesPlaced')?.dataset.y||'',managerSignX:document.getElementById('managerPlaced')?.dataset.x||'',managerSignY:document.getElementById('managerPlaced')?.dataset.y||''}}
 function restoreSignatures(fields={}){signatureImages={salesman:fields.salesmanSignData||'',customer:fields.customerSignData||'',manager:fields.managerSignData||''};placedManagerSignature=fields.managerPlacedSignData!==undefined?fields.managerPlacedSignData:(fields.managerSignData||'');renderSignatures();[['salesPlaced',fields.salesSignX,fields.salesSignY],['managerPlaced',fields.managerSignX,fields.managerSignY]].forEach(([id,x,y])=>{let el=document.getElementById(id);if(el){el.style.left=(x||'10')+'px';el.style.top=(y||'65%').toString().includes('%')?(y||'65%'):(y||'10')+'px';el.dataset.x=x||'10';el.dataset.y=y||'65%'}})}
 function enablePlacedSignatureDrag(){document.querySelectorAll('#managerPlaced').forEach(el=>{let sx=0,sy=0,l=0,t=0;el.addEventListener('pointerdown',e=>{if(e.target.closest('.placed-sign-delete'))return;sx=e.clientX;sy=e.clientY;l=parseFloat(el.dataset.x||el.offsetLeft);t=el.dataset.y?.includes('%')?el.offsetTop:parseFloat(el.dataset.y||el.offsetTop);el.setPointerCapture?.(e.pointerId);el.dataset.dragging='1';e.preventDefault()});el.addEventListener('pointermove',e=>{if(el.dataset.dragging!=='1')return;let x=Math.max(0,l+e.clientX-sx),y=Math.max(0,t+e.clientY-sy);el.style.left=x+'px';el.style.top=y+'px';el.dataset.x=String(x);el.dataset.y=String(y)});let stop=()=>delete el.dataset.dragging;el.addEventListener('pointerup',stop);el.addEventListener('pointercancel',stop)})}
-function addItem(d={}){count++;let r=document.createElement('section');r.className='item';r.innerHTML=`<div class="num"></div><div class="details">${[['Sample','sample'],['Whatsapp','whatsapp'],['Size','size'],['Length','length'],['Other','other1'],['Other','other2']].map(([l,k])=>`<div class="dline"><label>${l}</label><input data-k="${k}" value="${esc(d[k])}"></div>`).join('')}<div class="item-photo-tools"><button type="button" class="dark" data-photo-pick>📷 Product Photo</button><input type="file" accept="image/*" data-photo-file><img class="item-photo-preview" data-photo-preview alt="Product photo preview" style="display:${d.imageUrl?'block':'none'}" src="${esc(d.imageUrl||'')}"><span class="item-photo-status" data-photo-status>${d.imageUrl?'Photo saved':'No photo (optional)'}</span><input type="hidden" data-k="imageUrl" value="${esc(d.imageUrl||'')}"><input type="hidden" data-k="imageFileId" value="${esc(d.imageFileId||'')}"><input type="hidden" data-k="imageName" value="${esc(d.imageName||'')}"></div></div><div class="cell"><input data-k="ob" aria-label="OB" value="${esc(d.ob)}"></div><div class="cell"><input data-k="weight" aria-label="Weight" value="${esc(d.weight)}"></div><div class="cell"><textarea data-k="remark" aria-label="Remark">${esc(d.remark)}</textarea></div>`;items.appendChild(r);let pick=r.querySelector('[data-photo-pick]'),file=r.querySelector('[data-photo-file]');pick.addEventListener('click',()=>file.click());file.addEventListener('change',()=>uploadItemPhoto(r,file.files&&file.files[0]));renumber()}
+function photoPreviewUrl(url,fileId=''){if(fileId)return 'https://drive.google.com/thumbnail?id='+encodeURIComponent(fileId)+'&sz=w400';if(!url)return '';if(url.startsWith('data:image/'))return url;return url;}
+function addItem(d={}){count++;let r=document.createElement('section');r.className='item';r.innerHTML=`<div class="num"></div><div class="details">${[['Sample','sample'],['Whatsapp','whatsapp'],['Size','size'],['Length','length'],['Other','other1'],['Other','other2']].map(([l,k])=>`<div class="dline"><label>${l}</label><input data-k="${k}" value="${esc(d[k])}"></div>`).join('')}<div class="item-photo-tools"><button type="button" class="dark" data-photo-pick>📷 Product Photo</button><input type="file" accept="image/*" data-photo-file><img class="item-photo-preview" data-photo-preview alt="Product photo preview" style="display:${d.imageUrl?'block':'none'}" src="${esc(photoPreviewUrl(d.imageUrl||'',d.imageFileId||''))}"><span class="item-photo-status" data-photo-status>${d.imageUrl?'Photo saved':'No photo (optional)'}</span><input type="hidden" data-k="imageUrl" value="${esc(d.imageUrl||'')}"><input type="hidden" data-k="imageFileId" value="${esc(d.imageFileId||'')}"><input type="hidden" data-k="imageName" value="${esc(d.imageName||'')}"></div></div><div class="cell"><input data-k="ob" aria-label="OB" value="${esc(d.ob)}"></div><div class="cell"><input data-k="weight" aria-label="Weight" value="${esc(d.weight)}"></div><div class="cell"><textarea data-k="remark" aria-label="Remark">${esc(d.remark)}</textarea></div>`;items.appendChild(r);let pick=r.querySelector('[data-photo-pick]'),file=r.querySelector('[data-photo-file]');pick.addEventListener('click',()=>file.click());file.addEventListener('change',()=>uploadItemPhoto(r,file.files&&file.files[0]));renumber()}
 async function compressProductImage(file){const source=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result));reader.onerror=reject;reader.readAsDataURL(file)});const img=await new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=reject;im.src=source});const max=1600,scale=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight)),canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(img.naturalWidth*scale));canvas.height=Math.max(1,Math.round(img.naturalHeight*scale));canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);return {dataUrl:canvas.toDataURL('image/jpeg',0.82),mimeType:'image/jpeg',fileName:(file.name.replace(/\.[^.]+$/,'')||'product-photo')+'.jpg'}}
-async function uploadItemPhoto(row,file){if(!file)return;if(!file.type.startsWith('image/')){alert('कृपया Image फाइल निवडा.');return}const status=row.querySelector('[data-photo-status]'),preview=row.querySelector('[data-photo-preview]'),pick=row.querySelector('[data-photo-pick]');try{status.textContent='Uploading photo…';pick.disabled=true;const packed=await compressProductImage(file);const dataUrl=packed.dataUrl;const base64=dataUrl.split(',')[1];const result=await apiPost({action:'uploadImage',fileName:packed.fileName,mimeType:packed.mimeType,base64});if(!result||result.success!==true||!result.fileId||!result.url)throw new Error(result?.message||'Upload failed');row.querySelector('[data-k="imageUrl"]').value=result.url;row.querySelector('[data-k="imageFileId"]').value=result.fileId;row.querySelector('[data-k="imageName"]').value=file.name;preview.src=result.url;preview.style.display='block';status.textContent='Photo uploaded';alert('Product Photo Upload झाला. Order Save करा.')}catch(e){status.textContent='Upload failed';alert('फोटो Upload झाला नाही. Internet, Apps Script deployment आणि permissions तपासा.');console.error(e)}finally{pick.disabled=false;row.querySelector('[data-photo-file]').value=''}}
+async function uploadItemPhoto(row,file){if(!file)return;if(!file.type.startsWith('image/')){alert('कृपया Image फाइल निवडा.');return}const status=row.querySelector('[data-photo-status]'),preview=row.querySelector('[data-photo-preview]'),pick=row.querySelector('[data-photo-pick]');try{status.textContent='Uploading photo…';pick.disabled=true;const packed=await compressProductImage(file);const dataUrl=packed.dataUrl;const base64=dataUrl.split(',')[1];const result=await apiPost({action:'uploadImage',fileName:packed.fileName,mimeType:packed.mimeType,base64});if(!result||result.success!==true||!result.fileId||!result.url)throw new Error(result?.message||'Upload failed');row.querySelector('[data-k="imageUrl"]').value=result.url;row.querySelector('[data-k="imageFileId"]').value=result.fileId;row.querySelector('[data-k="imageName"]').value=file.name;preview.src=photoPreviewUrl(result.url,result.fileId);preview.style.display='block';preview.onerror=()=>{status.textContent='Photo uploaded; preview unavailable';};status.textContent='Photo uploaded';alert('Product Photo Upload झाला. Order Save करा.')}catch(e){status.textContent='Upload failed';alert('फोटो Upload झाला नाही. Internet, Apps Script deployment आणि permissions तपासा.');console.error(e)}finally{pick.disabled=false;row.querySelector('[data-photo-file]').value=''}}
 function renumber(){[...items.children].forEach((r,i)=>r.querySelector('.num').textContent=(i+1)+')')}
 function data(){let fields={};f.querySelectorAll('[name]').forEach(x=>fields[x.name]=x.value);Object.assign(fields,signaturesData());let rows=[...items.children].map(r=>{let o={};r.querySelectorAll('[data-k]').forEach(x=>o[x.dataset.k]=x.value);return o});return {fields,items:rows}}
 function fill(o){f.querySelectorAll('[name]').forEach(x=>x.value=o.fields?.[x.name]||'');restoreSignatures(o.fields||{});items.innerHTML='';count=0;(o.items||[]).forEach(addItem);if(!items.children.length)addItem();currentId=o.id||null;scrollTo({top:0,behavior:'smooth'})}
@@ -56,7 +57,62 @@ const DELETED_KEY='jewellery_orders_deleted_v1';
 function deletedOrders(){try{return JSON.parse(localStorage.getItem(DELETED_KEY)||'[]')}catch(e){return []}}
 function saveDeletedOrders(a){localStorage.setItem(DELETED_KEY,JSON.stringify([...new Set(a)]))}
 async function apiPost(payload){const r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});return r.json().catch(()=>({success:true}))}
-async function syncOrders(showMessage=true){try{const response=await fetch(API_URL+'?action=list&t='+Date.now());if(!response.ok)throw new Error('API read failed');const result=await response.json();if(result.success===false)throw new Error(result.message||'API error');const remote=Array.isArray(result.orders)?result.orders:(Array.isArray(result.data)?result.data:[]);let local=orders(),deleted=deletedOrders(),map=new Map();remote.forEach(x=>{const o=x.order||x.data||x;const id=x['Order ID']||x.id||o.id;if(!id)return;map.set(String(id),{id:String(id),order:o,deleted:x.Deleted===true||String(x.Deleted).toLowerCase()==='true'||x.deleted===true,updatedAt:x['Updated At']||o.updatedAt||x.updatedAt||''})});for(const [id,r] of map){if(r.deleted){if(!deleted.includes(id))deleted.push(id);local=local.filter(o=>String(o.id)!==id);continue}if(deleted.includes(id)){await apiPost({action:'delete',id});continue}const i=local.findIndex(o=>String(o.id)===id);if(i<0)local.push(r.order);else if(String(r.updatedAt)>String(local[i].updatedAt||''))local[i]=r.order}for(const o of local){const id=String(o.id);if(deleted.includes(id)){await apiPost({action:'delete',id});continue}const r=map.get(id);if(!r)await apiPost({action:'save',id,order:o});else if(!r.deleted&&String(o.updatedAt||'')>String(r.updatedAt||''))await apiPost({action:'save',id,order:o})}local=local.filter(o=>!deleted.includes(String(o.id)));localStorage.setItem(KEY,JSON.stringify(local));saveDeletedOrders(deleted);render();renderHome();if(showMessage)alert('Refresh Order पूर्ण!');return true}catch(e){if(showMessage)alert('Refresh Order करता आले नाही. Internet आणि Google Sheet API तपासा.');console.error(e);return false}}
+async function syncOrders(showMessage=true){
+  try{
+    const response=await fetch(API_URL+'?action=list&t='+Date.now(),{cache:'no-store'});
+    if(!response.ok)throw new Error('API read failed: '+response.status);
+    const result=await response.json();
+    if(result.success===false)throw new Error(result.message||'API error');
+    const remote=Array.isArray(result.orders)?result.orders:(Array.isArray(result.data)?result.data:[]);
+    let local=orders();
+    let deleted=deletedOrders().map(String);
+    const map=new Map();
+    remote.forEach(x=>{
+      const o=x.order||x.data||x;
+      const id=String(x['Order ID']||x.id||o.id||'');
+      if(!id||!o||typeof o!=='object')return;
+      const isDeleted=x.Deleted===true||String(x.Deleted).toLowerCase()==='true'||x.deleted===true||String(x.deleted).toLowerCase()==='true';
+      map.set(id,{id,order:o,deleted:isDeleted,updatedAt:x['Updated At']||x.updatedAt||o.updatedAt||''});
+    });
+    // Sheet is authoritative for every ID it returns. FALSE revives an order even if
+    // this browser has an old deleted-ID marker; TRUE removes it from the app.
+    for(const [id,r] of map){
+      if(r.deleted){
+        if(!deleted.includes(id))deleted.push(id);
+        local=local.filter(o=>String(o.id)!==id);
+        continue;
+      }
+      deleted=deleted.filter(x=>x!==id);
+      const i=local.findIndex(o=>String(o.id)===id);
+      const remoteOrder={...r.order,id:r.order.id||id};
+      if(i<0)local.push(remoteOrder);else local[i]=remoteOrder;
+    }
+    // Keep local-only orders and upload them to the Sheet; don't resurrect IDs
+    // that are explicitly marked Deleted=TRUE in the Sheet.
+    for(const o of local){
+      const id=String(o.id||'');
+      if(!id)continue;
+      const r=map.get(id);
+      if(r&&r.deleted)continue;
+      if(!r){
+        if(!deleted.includes(id)){
+          const saved=await apiPost({action:'save',id,order:o});
+          if(saved&&saved.success===false)throw new Error(saved.message||'Order save failed: '+id);
+        }
+      }
+    }
+    local=local.filter(o=>!deleted.includes(String(o.id)));
+    localStorage.setItem(KEY,JSON.stringify(local));
+    saveDeletedOrders(deleted);
+    render();renderHome();
+    if(showMessage)alert('Refresh Order पूर्ण! Sheet मधील ऑर्डर्स अपडेट झाल्या.');
+    return true;
+  }catch(e){
+    console.error('Refresh Order error:',e);
+    if(showMessage)alert('Refresh Order करता आले नाही. Google Sheet API / deployment तपासा. तपशील: '+(e.message||e));
+    return false;
+  }
+}
 function clearSavedFilters(){['savedDateFilter','savedMonthFilter','savedStatusFilter'].forEach(id=>{let el=document.getElementById(id);if(el)el.value=''});render()}
 function render(){let a=orders(),el=document.getElementById('savedList');el.innerHTML='';let dateFilter=document.getElementById('savedDateFilter')?.value||'',monthFilter=document.getElementById('savedMonthFilter')?.value||'',statusFilter=document.getElementById('savedStatusFilter')?.value||'';let dateMonthFiltered=a.filter(o=>{let d=o.fields||{},date=d.awakDate||o.updatedAt?.slice(0,10)||'';return (!dateFilter||date===dateFilter)&&(!monthFilter||date.startsWith(monthFilter))});document.getElementById('savedPaidCount').textContent=dateMonthFiltered.filter(o=>(o.fields?.paymentStatus||'')==='Paid').length;document.getElementById('savedReceiveCount').textContent=dateMonthFiltered.filter(o=>(o.fields?.paymentStatus||'')==='Receive').length;let filtered=dateMonthFiltered.filter(o=>!statusFilter||(o.fields?.paymentStatus||'')===statusFilter);if(!filtered.length){el.textContent=a.length?'या फिल्टरनुसार ऑर्डर सापडली नाही.':'अजून ऑर्डर सेव्ह केलेली नाही.';renderHome();return}filtered.forEach(o=>{let d=o.fields||{},c=document.createElement('div');c.className='card';let info=document.createElement('div');info.innerHTML=`<b>${esc(d.name||'नाव नाही')}</b><br>Mobile: ${esc(d.mobile||'-')} | Awak No.: ${esc(d.awakNo||'-')} | Date: ${esc(d.awakDate||'-')} | Status: <b>${esc(d.paymentStatus||'-')}</b>`;let acts=document.createElement('div');[['Load / Edit',()=>{openForm();load(o.id)},''],['WhatsApp',()=>share(o),''],['Delete',()=>del(o.id),'danger']].forEach(([t,fn,cl])=>{let b=document.createElement('button');b.textContent=t;if(cl)b.className=cl;b.onclick=fn;acts.appendChild(b)});c.append(info,acts);el.appendChild(c)});renderHome()}
 const TAG_OPTIONS_KEY='jewellery_order_tag_options_v1';
@@ -75,26 +131,18 @@ function shareText(o){
   add('Address',[d.address,d.address2].filter(v=>String(v||'').trim()).join(' '));
   add('Mobile',d.mobile);
   add('24 Ct Rate',d.rate24);
-  add('23 Ct Rate',d.rate23);
-  add('22 Ct Rate',d.rate22);
-  add('Awak No',d.awakNo);
   add('Date',d.awakDate);
-  add('Receipt No',d.receiptNo);
-  add('Date',d.receiptDate);
   add('Delivery',d.deliveryDate);
-  add('Amount',d.rupees);
   (o.items||[]).forEach((x,i)=>{
     s.push('━━━━━━━━━━━━━━',`Item ${i+1}`);
     addItemLine(s,'Sample',x.sample);
     addItemLine(s,'Whatsapp',x.whatsapp);
     addItemLine(s,'Size',x.size);
-    addItemLine(s,'Length',x.length);
-    addItemLine(s,'OB',x.ob);
     addItemLine(s,'Wt',x.weight);
     addItemLine(s,'Remark',x.remark);
     addItemLine(s,'Other',x.other1);
     addItemLine(s,'Other',x.other2);
-    if(x.imageUrl)addItemLine(s,'Product Photo',x.imageUrl);
+    s.push(`Product Photo: ${String(x.imageUrl||'').trim()}`);
   });
   return s.join('\n');
 }
