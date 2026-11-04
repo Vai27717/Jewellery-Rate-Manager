@@ -142,7 +142,7 @@ function shareText(o){
     addItemLine(s,'Remark',x.remark);
     addItemLine(s,'Other',x.other1);
     addItemLine(s,'Other',x.other2);
-    s.push(`Product Photo: ${String(x.imageUrl||'').trim()}`);
+    s.push('Product Photo:');
   });
   return s.join('\n');
 }
